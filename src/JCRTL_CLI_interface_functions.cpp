@@ -22,9 +22,6 @@ void _jctrl_cli_feedback_output(String output) {
 bool jctrl_cli_process_torque_command(char(*cli_arg)[N_MAX_ARGS]) {
 
     char* keyword = cli_arg[0];
-
-    bool error = false;
-
     bool processed = false;
 
     if (strcmp(keyword, "torque") == 0 || strcmp(keyword, "t") == 0) {
@@ -192,7 +189,7 @@ bool jctrl_cli_process_drive_sys_command(char(*cli_arg)[N_MAX_ARGS]) {
                 return processed;
             }
             if (mode == 1) {
-                drvSys_start_motion_control(direct_torque);
+                //drvSys_start_motion_control(direct_torque);
                 _jctrl_cli_feedback_output("Started motion control in direct torque mode.");
                 return processed;
             }
@@ -310,9 +307,6 @@ bool jctrl_cli_process_controller_state_command(char(*cli_arg)[N_MAX_ARGS]) {
 
         Serial.print("Control Mode: ");
         String control_mode;
-        if (state.control_mode == direct_torque) {
-            control_mode = "Direct Torque";
-        }
         if (state.control_mode == closed_loop_foc) {
             control_mode = "Closed Loop FOC";
         }
@@ -515,7 +509,7 @@ bool jctrl_cli_limit_command(char(*cli_arg)[N_MAX_ARGS]) {
         }
         if (strcmp(keyword, "t") == 0) {
             float max_torque = atof(value_1);
-            drvSys_limit_torque(max_torque);
+            //drvSys_limit_torque(max_torque);
         }
         if (strcmp(keyword, "v") == 0) {
             float max_vel = atof(value_1);

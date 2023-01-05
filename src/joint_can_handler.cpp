@@ -97,7 +97,7 @@ void can_handle_task(void* params) {
 
 void can_send_controller_state(drvSys_controllerCondition controller_state) {
 
-    float max_motor_torque = drvSys_get_parameters().max_torque_Nm;
+    float max_motor_torque = drvSys_get_parameters().max_torque;
     drvComm_ControllerState state_data = drvComm_pack_controllerState(controller_state, can_joint_id, max_motor_torque);
 
     union {
@@ -292,23 +292,6 @@ void can_read_incoming_CAN_commands() {
 
             }
 
-            if (can_id.msg_type == drive_direct_torque_command) {
-
-                union {
-                    drvComm_MotionCmd_direct_motor_torque_target direct_cmd;
-                    uint8_t bytes[DRVCOMM_DIRECT_TORQUE_CMD_LENGTH];
-                }input_packet;
-
-                CAN.readBytes(input_packet.bytes, size_t(DRVCOMM_DIRECT_TORQUE_CMD_LENGTH));
-
-                float target_torque = drvComm_unpack_direct_torque_command(input_packet.direct_cmd, can_joint_id);
-
-                if (drvSys_get_controllerState().control_mode == direct_torque) {
-                    _drvSys_set_target_torque(target_torque);
-                }
-
-            }
-
             if (can_id.msg_type == drive_gain_data) {
                 union {
                     drvComm_gains_Packet gains_packet;
@@ -388,7 +371,7 @@ void can_parse_parameter_command(drvComm_paramsCmd param_cmd) {
         portable_float_type parameter;
         parameter.binary = param_cmd.param_data;
         float torque_limit = parameter.value;
-        drvSys_limit_torque(torque_limit);
+        //drvSys_limit_torque(torque_limit);
     }
 
     if (param_cmd.type == pos_limit_high) {

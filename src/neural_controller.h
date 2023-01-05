@@ -186,16 +186,18 @@ private:
     pid_tune_sample current_pid_sample;
     emulator_sample current_sample;
 
+    //Normalization constants
+
     const float max_angle = 180.0 * DEG2RAD;
     const float inv_max_angle = 1.0 / max_angle;
     const float max_vel = 180.0 * DEG2RAD;
     const float inv_max_vel = 1.0 / max_vel;
     const float max_acc = 1000 * DEG2RAD;
     const float inv_max_acc = 1.0 / max_acc;
-    const float max_motor_torque = DRVSYS_TORQUE_CONSTANT;
-    const float inv_max_motor_torque = 1.0 / max_motor_torque;
-    const float max_joint_torque = 100;
-    const float inv_max_joint_torque = 1 / max_joint_torque;
+    const float max_motor_torque = DRVSYS_TORQUE_MAXIMUM;
+    const float inv_max_motor_torque = 1.0 / DRVSYS_TORQUE_MAXIMUM;
+    const float max_joint_torque = 100.0;
+    const float inv_max_joint_torque = 1.0 / max_joint_torque;
 
     float pos_sample_time_s = DRVSYS_CONTROL_POS_PERIOD_US * 1e-6;
     float vel_sample_time_s = DRVSYS_CONTROL_VEL_PERIOD_US * 1e-6;

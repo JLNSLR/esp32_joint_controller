@@ -27,7 +27,7 @@ void ClosedLoopStepperController::setup(TMC2160Stepper* stepper) {
     //stepper_driver->begin();
     stepper_driver->direct_mode(false);
     stepper_driver->toff(5);
-    stepper_driver->rms_current(DRVSYS_PHASE_CURRENT_NOMINAL_mA);
+    stepper_driver->rms_current(DRVSYS_NOMINAL_PHASE_CURRENT_mA);
     stepper_driver->microsteps(DRVSYS_MICROSTEPS);
     stepper_driver->en_pwm_mode(true);
     stepper_driver->pwm_autoscale(true);
@@ -69,7 +69,7 @@ void ClosedLoopStepperController::stop() {
 
     timerAlarmDisable(timer);
     stepper_driver->direct_mode(true);
-    stepper_driver->rms_current(DRVSYS_PHASE_CURRENT_MAX_mA);
+    stepper_driver->rms_current(DRVSYS_NOMINAL_PHASE_CURRENT_mA * (1.0 + DRVSYS_CURRENT_OVERDRIVE));
 
 
 }

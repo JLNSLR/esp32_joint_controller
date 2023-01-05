@@ -51,11 +51,11 @@ struct drvComm_CANID {
     };
 };
 
-#define DRVCOMM_CONTROLLER_CMD_LENGTH 2
+#define DRVCOMM_CONTROLLER_CMD_LENGTH 1
 struct drvComm_modeCmd {
     bool start : 1;
     bool stop : 1;
-    drvSys_controlMode mode : 8;
+    drvSys_controlMode mode : 2;
 };
 
 
@@ -78,12 +78,13 @@ struct drvComm_controllerCmd {
     drvComm_controllerCmdType type : 8;
 };
 
-#define DRVCOMM_DRIVE_STATE_LENGTH 7
+#define DRVCOMM_DRIVE_STATE_LENGTH 8
 struct drvComm_DriveStatePacket {
     int pos : 14;
     int vel : 14;
     int acc : 14;
-    int m_torque : 9;
+    int m_torque : 11;
+    int m_torque_ff_int : 11;
 };
 #define DRVCOMM_LOAD_MSG_LENGTH 7
 struct drvComm_loadStatePacket {
@@ -110,7 +111,7 @@ struct drvComm_gain_cmd {
 
 };
 
-#define DRVCOMM_CONTROLLER_STATE_LENGTH 6
+#define DRVCOMM_CONTROLLER_STATE_LENGTH 7
 struct drvComm_ControllerState {
     int stateFlag : 3;
     int mode : 3;
@@ -121,7 +122,7 @@ struct drvComm_ControllerState {
     int temperature : 12;
     int overtemperature : 1;
     int overtemp_warn : 1;
-    int torque_limit : 8;
+    int torque_limit : 11;
     int fan_level : 4;
     int neural_control : 1;
 };
@@ -147,7 +148,7 @@ struct drvComm_MotionCmd_traj_target {
     int pos : 16;
     int vel : 14;
     int acc : 13;
-    int torque_ff : 9;
+    int torque_ff : 11;
     int position_control : 1;
     int velocity_control : 1;
     int feedforward : 1;
@@ -159,11 +160,6 @@ struct drvComm_MotionCmd_goTo_target_packet {
     int acc_max : 13;
 };
 
-
-#define DRVCOMM_DIRECT_TORQUE_CMD_LENGTH 2
-struct drvComm_MotionCmd_direct_motor_torque_target {
-    int m_torque_target : 9;
-};
 
 struct drvComm_DriveState {
     float pos;
@@ -202,10 +198,6 @@ drvComm_MotionCmd_traj_target drvComm_pack_traj_command(drvSys_driveTargets targ
 //PID Parameter update
 drvComm_gain_cmd drvComm_unpack_gain_packet(drvComm_gains_Packet gains_packet);
 drvComm_gains_Packet drvComm_pack_gain_packet(drvComm_gain_cmd gains);
-
-//Direct torque command
-drvComm_MotionCmd_direct_motor_torque_target drvComm_pack_direct_torque_command(float target_torque, const int joint_id);
-float drvComm_unpack_direct_torque_command(drvComm_MotionCmd_direct_motor_torque_target torque_val, const int joint_id);
 
 // Controller State Message
 drvComm_ControllerState drvComm_pack_controllerState(drvSys_controllerCondition controller_state, const int joint_id, float torque_limit);

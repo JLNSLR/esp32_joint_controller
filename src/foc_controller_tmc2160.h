@@ -26,8 +26,8 @@ class FOCController
 {
 public:
     FOCController();
-    FOCController(AS5048A* m_encoder, TMC2160Stepper* driver, int16_t max_current_mA,
-        float max_torque, SemaphoreHandle_t SPI_mutex);
+    FOCController(AS5048A* m_encoder, TMC2160Stepper* driver, int16_t max_current_rms_nom_mA,
+        float max_torque_nom, float foc_current_overdrive, SemaphoreHandle_t SPI_mutex);
 
     void setup_driver();
     void calibrate_phase_angle(uint32_t phase_angle_null = 0); // blocking function should only be called during setup phase
@@ -36,29 +36,31 @@ public:
 
     AS5048A* motor_encoder;
     TMC2160Stepper* driver;
-    int16_t max_current_mA;
-    float max_torque = 0;
+
+    // Variables that define the current targets based on desired torque
+    int16_t max_current_rms_nom_mA;
+    float max_torque_nom = 0;
+    float foc_current_overdrive = 0.2;
+
     const int N_pole_pairs = N_MOTOR_POLE_PAIRS;
-
-    void set_empiric_phase_shift_factor(float factor);
-
     float target_torque = 0;
 
     bool calibrated = false;
     int32_t phase_offset_correct = 0;
 
-    void set_target_torque(float torque_target);
-    void set_target_torque_9bit(int16_t torque_target);
-    void _test_sineLookup(float input);
 
-    void set_max_current(int16_t max_current_mA, float max_torque);
+    void set_target_torque(float torque_target);
+    //void set_target_torque_9bit(int16_t torque_target);
+    void set_empiric_phase_shift_factor(float factor);
+
+    void _test_sineLookup(float input);
 
     long microseconds = 0;
     bool  input_averaging = true;
-
     int32_t phase_null_angle = 0;
-
     float empiric_phase_shift_factor = 0;
+    int16_t max_current_rms_foc_mA;
+    float motor_torque_const;
 
 private:
     union xdirect_tmc

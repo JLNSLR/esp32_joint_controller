@@ -2,29 +2,47 @@
 #define ROBOT_GLOBAL_DEF_H
 
 // Hybrid Stepper Motor Definitions
-#define JOINT_0_MOTOR_MAX_CURRENT_mA 3200
-#define JOINT_1_MOTOR_MAX_CURRENT_mA 3200
-#define JOINT_2_MOTOR_MAX_CURRENT_mA 2500
-#define JOINT_3_MOTOR_MAX_CURRENT_mA 2500
-#define JOINT_4_MOTOR_MAX_CURRENT_mA 2100
-#define JOINT_5_MOTOR_MAX_CURRENT_mA 1800 
-#define JOINT_6_MOTOR_MAX_CURRENT_mA 600
 
-#define JOINT_0_MOTOR_NOMINAL_CURRENT_mA 2800
-#define JOINT_1_MOTOR_NOMINAL_CURRENT_mA 2800
-#define JOINT_2_MOTOR_NOMINAL_CURRENT_mA 2100
-#define JOINT_3_MOTOR_NOMINAL_CURRENT_mA 2100
-#define JOINT_4_MOTOR_NOMINAL_CURRENT_mA 1680
-#define JOINT_5_MOTOR_NOMINAL_CURRENT_mA 1500 
-#define JOINT_6_MOTOR_NOMINAL_CURRENT_mA 400
+// All definitions made in IRMS -> Imax = sqrt(2) * Irms
 
-#define JOINT_0_MOTOR_TORQUE_CONST 0.66
-#define JOINT_1_MOTOR_TORQUE_CONST 0.66
-#define JOINT_2_MOTOR_TORQUE_CONST 0.3095
-#define JOINT_3_MOTOR_TORQUE_CONST 0.3095
-#define JOINT_4_MOTOR_TORQUE_CONST 0.3095
-#define JOINT_5_MOTOR_TORQUE_CONST 0.30
-#define JOINT_6_MOTOR_TORQUE_CONST 0.65
+#define JOINT_0_MOTOR_NOMINAL_CURRENT_RMS 2.8
+#define JOINT_1_MOTOR_NOMINAL_CURRENT_RMS 2.8
+#define JOINT_2_MOTOR_NOMINAL_CURRENT_RMS 2.1
+#define JOINT_3_MOTOR_NOMINAL_CURRENT_RMS 2.1
+#define JOINT_4_MOTOR_NOMINAL_CURRENT_RMS 1.68
+#define JOINT_5_MOTOR_NOMINAL_CURRENT_RMS 1.5 
+#define JOINT_6_MOTOR_NOMINAL_CURRENT_RMS 0.4
+
+#define SQRT2 1.41421
+// Kt_rms = 1.41*Kt
+
+#define JOINT_0_MOTOR_HOLD_TORQUE 1.9
+#define JOINT_1_MOTOR_HOLD_TORQUE 1.9
+#define JOINT_2_MOTOR_HOLD_TORQUE 0.65
+#define JOINT_3_MOTOR_HOLD_TORQUE 0.65
+#define JOINT_4_MOTOR_HOLD_TORQUE 0.51
+#define JOINT_5_MOTOR_HOLD_TORQUE 0.45
+#define JOINT_6_MOTOR_HOLD_TORQUE 0.26
+
+#define JOINT_0_TRANSMISSION_RATIO 60
+#define JOINT_1_TRANSMISSION_RATIO 60
+#define JOINT_2_TRANSMISSION_RATIO 50
+#define JOINT_3_TRANSMISSION_RATIO 50
+#define JOINT_4_TRANSMISSION_RATIO 43.94740484
+#define JOINT_5_TRANSMISSION_RATIO 22.5
+#define JOINT_6_TRANSMISSION_RATIO 6
+
+// 0 -> base joint -> 6 -> endeffector joint
+const float motor_nominal_current_rms[7] = { JOINT_0_MOTOR_NOMINAL_CURRENT_RMS, JOINT_1_MOTOR_NOMINAL_CURRENT_RMS,
+                                                 JOINT_2_MOTOR_NOMINAL_CURRENT_RMS, JOINT_3_MOTOR_NOMINAL_CURRENT_RMS,
+                                                 JOINT_4_MOTOR_NOMINAL_CURRENT_RMS, JOINT_5_MOTOR_NOMINAL_CURRENT_RMS , JOINT_6_MOTOR_NOMINAL_CURRENT_RMS };
+const float motor_hold_torque[7] = { JOINT_0_MOTOR_HOLD_TORQUE,JOINT_1_MOTOR_HOLD_TORQUE,
+                                    JOINT_2_MOTOR_HOLD_TORQUE,JOINT_3_MOTOR_HOLD_TORQUE,JOINT_4_MOTOR_HOLD_TORQUE
+                                    ,JOINT_5_MOTOR_HOLD_TORQUE,JOINT_6_MOTOR_HOLD_TORQUE };
+const float max_overdrive = 0.75;
+
+const float joint_transmission_ratio[7] = { JOINT_0_TRANSMISSION_RATIO,JOINT_1_TRANSMISSION_RATIO, JOINT_2_TRANSMISSION_RATIO,
+                                                JOINT_3_TRANSMISSION_RATIO, JOINT_4_TRANSMISSION_RATIO, JOINT_5_TRANSMISSION_RATIO,JOINT_6_TRANSMISSION_RATIO };
 
 // DMS Based Torque Sensor definitions
 #define JOINT_0_TORQUE_SENSOR_MAX_Nm 200.0
@@ -68,14 +86,41 @@
 
 #define N_BITS_TORQUE_SENSOR_DATA 24
 
+const float motor_command_res = 1.0 / 255.0;
 
-const float motor_torque_conversion_factor_arr_9bit[7] = { JOINT_0_MOTOR_MAX_CURRENT_mA * 1e-3 * JOINT_0_MOTOR_TORQUE_CONST * (1.0 / 255.0),
-                                                 JOINT_1_MOTOR_MAX_CURRENT_mA * 1e-3 * JOINT_1_MOTOR_TORQUE_CONST * (1.0 / 255.0),
-                                                 JOINT_2_MOTOR_MAX_CURRENT_mA * 1e-3 * JOINT_2_MOTOR_TORQUE_CONST * (1.0 / 255.0),
-                                                 JOINT_3_MOTOR_MAX_CURRENT_mA * 1e-3 * JOINT_3_MOTOR_TORQUE_CONST * (1.0 / 255.0),
-                                                 JOINT_4_MOTOR_MAX_CURRENT_mA * 1e-3 * JOINT_4_MOTOR_TORQUE_CONST * (1.0 / 255.0),
-                                                 JOINT_5_MOTOR_MAX_CURRENT_mA * 1e-3 * JOINT_5_MOTOR_TORQUE_CONST * (1.0 / 255.0),
-                                                 JOINT_6_MOTOR_MAX_CURRENT_mA * 1e-3 * JOINT_6_MOTOR_TORQUE_CONST * (1.0 / 255.0) };
+const float torque_communication_res = 1.0 / 1024.0;//11 Bit signed
+
+
+const float motor_phase_current_rms_nom[7] = { JOINT_0_MOTOR_NOMINAL_CURRENT_RMS, JOINT_1_MOTOR_NOMINAL_CURRENT_RMS,
+                                                    JOINT_2_MOTOR_NOMINAL_CURRENT_RMS, JOINT_3_MOTOR_NOMINAL_CURRENT_RMS,
+                                                    JOINT_4_MOTOR_NOMINAL_CURRENT_RMS, JOINT_5_MOTOR_NOMINAL_CURRENT_RMS,
+                                                    JOINT_6_MOTOR_NOMINAL_CURRENT_RMS };
+
+
+const float motor_torque_const[7] = { JOINT_0_MOTOR_HOLD_TORQUE / (SQRT2 * JOINT_0_MOTOR_NOMINAL_CURRENT_RMS),
+                                        JOINT_1_MOTOR_HOLD_TORQUE / (SQRT2 * JOINT_1_MOTOR_NOMINAL_CURRENT_RMS),
+                                        JOINT_2_MOTOR_HOLD_TORQUE / (SQRT2 * JOINT_2_MOTOR_NOMINAL_CURRENT_RMS),
+                                        JOINT_4_MOTOR_HOLD_TORQUE / (SQRT2 * JOINT_4_MOTOR_NOMINAL_CURRENT_RMS),
+                                        JOINT_5_MOTOR_HOLD_TORQUE / (SQRT2 * JOINT_5_MOTOR_NOMINAL_CURRENT_RMS),
+                                        JOINT_6_MOTOR_HOLD_TORQUE / (SQRT2 * JOINT_6_MOTOR_NOMINAL_CURRENT_RMS),
+                                        JOINT_5_MOTOR_HOLD_TORQUE / (SQRT2 * JOINT_5_MOTOR_NOMINAL_CURRENT_RMS) };
+
+const float motor_torque_conversion_factor_arr_9bit[7] = { float(JOINT_0_MOTOR_NOMINAL_CURRENT_RMS * SQRT2) * motor_torque_const[0] * motor_command_res,
+                                                 float(JOINT_1_MOTOR_NOMINAL_CURRENT_RMS * SQRT2) * motor_torque_const[1] * motor_command_res,
+                                                 float(JOINT_2_MOTOR_NOMINAL_CURRENT_RMS * SQRT2) * motor_torque_const[2] * motor_command_res,
+                                                 float(JOINT_3_MOTOR_NOMINAL_CURRENT_RMS * SQRT2) * motor_torque_const[3] * motor_command_res,
+                                                 float(JOINT_4_MOTOR_NOMINAL_CURRENT_RMS * SQRT2) * motor_torque_const[4] * motor_command_res,
+                                                 float(JOINT_5_MOTOR_NOMINAL_CURRENT_RMS * SQRT2) * motor_torque_const[5] * motor_command_res,
+                                                 float(JOINT_6_MOTOR_NOMINAL_CURRENT_RMS * SQRT2) * motor_torque_const[6] * motor_command_res };
+
+
+const float motor_torque_conversion_factor_arr_11bit[7] = { motor_hold_torque[0] * float(1.0 + max_overdrive) * torque_communication_res,
+                                                 motor_hold_torque[1] * float(1.0 + max_overdrive) * torque_communication_res,
+                                                 motor_hold_torque[2] * float(1.0 + max_overdrive) * torque_communication_res,
+                                                 motor_hold_torque[3] * float(1.0 + max_overdrive) * torque_communication_res,
+                                                 motor_hold_torque[4] * float(1.0 + max_overdrive) * torque_communication_res,
+                                                 motor_hold_torque[5] * float(1.0 + max_overdrive) * torque_communication_res,
+                                                 motor_hold_torque[6] * float(1.0 + max_overdrive) * torque_communication_res };
 
 const float sensor_torque_conversion_factor_24bit[7] = { JOINT_0_TORQUE_SENSOR_MAX_Nm / float(TORQUE_SENSOR_MAX_VAL23_BIT),
                                                             JOINT_1_TORQUE_SENSOR_MAX_Nm / float(TORQUE_SENSOR_MAX_VAL23_BIT),

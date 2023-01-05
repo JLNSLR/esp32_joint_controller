@@ -131,7 +131,7 @@ void NeuralController::add_sample(drvSys_FullDriveStateTimeSample sample, drvSys
     training_buffer_input.push(sample_data);
 
     // select random sample from input
-    int index = random(0, training_buffer_input.size() - 1);
+    //int index = random(0, training_buffer_input.size() - 1);
 
     xSemaphoreTake(mutex_training_buffer, portMAX_DELAY);
     training_buffer.push(sample_data);
@@ -641,12 +641,12 @@ void NeuralController::learning_step_pid_tuner() {
 
     float motor_torque = pid_torque + vel_ff_gain * vel_target + acc_ff_gain * acc_target;
 
-    if (motor_torque > DRVSYS_TORQUE_LIMIT) {
-        motor_torque = DRVSYS_TORQUE_LIMIT;
+    if (motor_torque > max_motor_torque) {
+        motor_torque = max_motor_torque;
     }
 
-    if (motor_torque < -DRVSYS_TORQUE_LIMIT) {
-        motor_torque = -DRVSYS_TORQUE_LIMIT;
+    if (motor_torque < -max_motor_torque) {
+        motor_torque = -max_motor_torque;
     }
 
 #ifdef PID_LEARN_DEBUG

@@ -18,15 +18,14 @@
 #include <joint_can_handler.h>
 
 
-
 // --- Global Variables --- //
 
 int counter = 0;
 
-
-
 void setup()
 {
+
+
 
 
   init_leds();
@@ -45,8 +44,8 @@ void setup()
 
   // Initialize Drive System 
   drvSys_initialize();
-  Serial.println("JCTRL_INFO: Setting up Drive System succesful. Starting FOC-Controller.");
-  drvSys_start_foc_processing();
+  Serial.println("JCTRL_INFO: Setting up Drive System succesful. Starting Processing.");
+  drvSys_start_realtime_processing();
 
   set_leds(0, 255, 0, true, 0);
 
@@ -72,10 +71,10 @@ void setup()
   set_standard_lights();
 
   // Initialize CAN Interface;
-  
+
   //can_init();
   //can_start_interface();
-  
+
 
 
   //set LED blue
@@ -90,7 +89,6 @@ void loop()
   cli_read_line_cmd();
   cli_parse_line_cmd();
   cli_execute_line_cmd();
-
 
   vTaskDelay(10);
   TIMERG0.wdt_wprotect = TIMG_WDT_WKEY_VALUE;

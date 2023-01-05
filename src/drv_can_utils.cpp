@@ -24,7 +24,7 @@ drvComm_DriveStatePacket drvComm_pack_drive_state(drvSys_driveState state, const
     packet.pos = int16_t(state.joint_pos * pos_to_14bit_data);
     packet.vel = int16_t(state.joint_vel * vel_to_14bit_data);
     packet.acc = int16_t(state.joint_acc * acc_to_13bit_data);
-    packet.m_torque = int16_t(state.motor_torque * float(1.0 / motor_torque_conversion_factor_arr_9bit[joint_id]));
+    packet.m_torque = int16_t(state.motor_torque * float(1.0 / motor_torque_conversion_factor_arr_11bit[joint_id]));
 
     return packet;
 }
@@ -64,7 +64,7 @@ drvSys_driveState drvComm_unpack_drive_state(drvComm_DriveStatePacket state_pack
     state.joint_pos = float(state_packet.pos) * pos_data_14bit_to_val;
     state.joint_vel = float(state_packet.vel) * vel_data_14bit_to_val;
     state.joint_acc = float(state_packet.acc) * acc_data_13bit_to_val;
-    state.motor_torque = float(state_packet.m_torque) * motor_torque_conversion_factor_arr_9bit[joint_id];
+    state.motor_torque = float(state_packet.m_torque) * motor_torque_conversion_factor_arr_11bit[joint_id];
 
     return state;
 
@@ -130,18 +130,6 @@ drvComm_MotionCmd_goTo_target_packet drvComm_pack_go_to_command(drvComm_goTo_tar
     return go_to_packet;
 }
 
-float drvComm_unpack_direct_torque_command(drvComm_MotionCmd_direct_motor_torque_target direct_torque, const int joint_id) {
-
-    return direct_torque.m_torque_target * motor_torque_conversion_factor_arr_9bit[joint_id];
-}
-
-drvComm_MotionCmd_direct_motor_torque_target drvComm_pack_direct_torque_command(float motor_torque, const int joint_id) {
-    drvComm_MotionCmd_direct_motor_torque_target direct_motor_torque_msg;
-    direct_motor_torque_msg.m_torque_target = motor_torque * (1.0 / float(motor_torque_conversion_factor_arr_9bit[joint_id]));
-
-    return direct_motor_torque_msg;
-}
-
 
 
 
@@ -153,7 +141,7 @@ drvComm_ControllerState drvComm_pack_controllerState(drvSys_controllerCondition 
     state_data.overtemperature = int(controller_state.overtemperature);
     state_data.temperature = int(controller_state.temperature * motor_temp_val_to_12bit);
     state_data.overtemp_warn = int(controller_state.temperature_warning);
-    state_data.neural_control = int(controller_state.neural_control_active);
+    //state_data.neural_control = int(controller_state.neural_control_active);
     state_data.fan_level = int(controller_state.fan_level);
     state_data.feed_forward_control = int(controller_state.feed_forward_control);
     state_data.position_control = int(controller_state.position_control);
@@ -169,7 +157,7 @@ drvComm_ControllerState drvComm_pack_controllerState(drvSys_controllerCondition 
         state_data.hit_endstop = 0b00;
     }
 
-    state_data.torque_limit = uint8_t(torque_limit * (1.0 / motor_torque_conversion_factor_arr_9bit[joint_id]));
+    state_data.torque_limit = uint8_t(torque_limit * (1.0 / motor_torque_conversion_factor_arr_11bit[joint_id]));
 
 
     return state_data;
@@ -183,7 +171,7 @@ drvSys_controllerCondition drvComm_unpack_controllerState(drvComm_ControllerStat
     controller_state.temperature_warning = bool(state_data.overtemp_warn);
     controller_state.overtemperature = bool(state_data.overtemperature);
     controller_state.temperature = motor_temp_12bit_to_val * state_data.temperature;
-    controller_state.neural_control_active = bool(state_data.neural_control);
+    //controller_state.neural_control_active = bool(state_data.neural_control);
     controller_state.fan_level = state_data.fan_level;
     controller_state.position_control = state_data.position_control;
     controller_state.feed_forward_control = state_data.feed_forward_control;

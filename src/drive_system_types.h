@@ -2,9 +2,9 @@
 #define DRIVE_SYS_TYPES_H
 
 /* Drive System State Flag */
-enum drvSys_StateFlag { error, not_ready, ready, closed_loop_control_active, closed_loop_control_inactive };
+enum drvSys_StateFlag { error, not_ready, closed_loop_control_inactive, closed_loop_control_active };
 /*Drive System Control Mode Variables */
-enum drvSys_controlMode { direct_torque, closed_loop_foc, stepper_mode };
+enum drvSys_controlMode { closed_loop_foc, stepper_mode };
 
 /* Drive System Priority constants */
 enum drvSys_priorities {
@@ -46,6 +46,8 @@ struct drvSys_driveState {
     float joint_acc;
     float joint_torque;
     float motor_torque;
+    float motor_torque_ff_int;
+
 };
 
 struct drvSys_FullDriveState {
@@ -57,6 +59,9 @@ struct drvSys_FullDriveState {
     float motor_pos;
     float motor_vel;
     float motor_acc;
+
+    float motor_torque_ff_pid;
+    float motor_torque_ff_inv_nn;
 };
 
 struct drvSys_FullDriveStateTimeSample {
@@ -82,15 +87,13 @@ struct drvSys_driveControlTargets {
 };
 
 struct drvSys_parameters {
-    int max_current_mA;
-    float max_torque_Nm;
     float max_vel;
+    float max_torque;
     float limit_high_rad;
     float limit_low_rad;
     bool endStops_enabled;
     drvSys_cascade_gains gains;
     drvSys_PID_Gains closed_loop_stepper_gains;
-
 };
 
 struct drvSys_notch_filter_params {
@@ -101,13 +104,11 @@ struct drvSys_notch_filter_params {
 extern drvSys_parameters drvSys_parameter_config;
 
 struct drvSys_Constants {
-    const int nominal_current_mA;
     const float transmission_ratio;
     const int joint_id;
-    const float motor_torque_constant;
+    const int motor_torque_constant;
+    const float max_motor_torque;
 };
-
-
 
 struct drvSys_controllerCondition {
     enum drvSys_controlMode control_mode;
@@ -122,7 +123,8 @@ struct drvSys_controllerCondition {
     bool temperature_warning;
     float temperature;
     int fan_level;
-    bool neural_control_active;
+    bool neural_inverse_dyn_active;
+    bool neural_pid_active;
 };
 
 

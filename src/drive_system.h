@@ -44,7 +44,7 @@ void drvSys_initialize_foc_based_control();
 
 void drvSys_initialize_stepper_based_control();
 
-int32_t drvSys_start_foc_processing();
+int32_t drvSys_start_realtime_processing();
 /**
  * @brief starts the motion controllers depending on the control mode
  *
@@ -170,12 +170,12 @@ void drvSys_save_PID_gains();
  */
 void drvSys_adv_PID_settings(bool pos, int type, float value);
 
-void drvSys_limit_torque(float torque_limit);
-
 
 bool _drvSys_read_PID_gains_from_flash();
 
 void _drvSys_save_angle_offset(float angle_offset);
+
+void _drvSys_set_torque_limit(float torque_limit);
 
 /* ###################################################
 ############ Internal Drive System functions #########
@@ -228,25 +228,15 @@ drvSys_cascade_gains _drvSys_predict_pid_gains();
 
 float drvSys_pid_nn_error(bool average = false);
 
-/**
- * @brief if torqueboost is active, the maximum phase current is used in foc control instead of the
- *         nominal phase current. Activated as standard, since FOC control is very efficient.
- *         Should be turned off if the driver or the motor gets increasingly hot
- *
- * @param active
- */
-void drvSys_set_torque_boost_active(bool active);
-
 float drvSys_get_pid_torque();
 
-float _drvSys_compute_notch_FIR_filter(float input, float* b_coef);
 
 float drvSys_get_delta_angle();
 
 
 /* Interrupt Handler */
 
-void IRAM_ATTR _drvSys_on_foc_timer();
+void IRAM_ATTR _drvSys_on_central_timer();
 
 /* ############################
 ########### RTOS TASKS ########
@@ -279,6 +269,8 @@ void _drvSys_closed_loop_stepper_task(void* parameters);
 void _drvSys_setup_dual_controller();
 
 void _drvSys_setup_direct_controller();
+
+float _drvSys_compute_notch_FIR_filter(float input, float* b_coef);
 
 void drvSys_calibrate_FOC();
 

@@ -2,12 +2,18 @@
 - Define Hard coded parameters for each joint
 */
 
+#ifndef DRIVESYS_SETTINGS_H
+#define DRIVE_SYS_SETTINGS_H
+
+
+#include <robot_global_def.h>
+
 #define DEG2RAD 0.01745329251994329576923690768489
 #define RAD2DEG 57.295779513082320876798154814105
 
 /* ##########################################################################
 ############## ----Constant Drive System Parameters----####################
-############################################################################* /
+############################################################################* */
 
 
 /* --- Timing Constants --- */
@@ -145,11 +151,14 @@
 
 
 // --- Motor Parameters --- */
-#define DRVSYS_PHASE_CURRENT_NOMINAL_mA 1500
-#define DRVSYS_TRANSMISSION_RATIO 90.0
-#define DRVSYS_TORQUE_CONSTANT 0.45 //max nominal torque
-#define DRVSYS_TORQUE_LIMIT 0.54
-#define DRVSYS_PHASE_CURRENT_MAX_mA 1800
+
+#define  DRVSYS_TRANSMISSION_RATIO 90 //joint_transmission_ratio[JOINT_ID]
+#define DRVSYS_HOLD_TORQUE motor_hold_torque[JOINT_ID]
+#define DRVSYS_NOMINAL_PHASE_CURRENT_mA  1000 * motor_phase_current_rms_nom[JOINT_ID]
+#define  DRVSYS_TORQUE_MAXIMUM  DRVSYS_HOLD_TORQUE * (1.0 + max_overdrive)
+
+#define DRVSYS_CURRENT_OVERDRIVE 0.25
+
 // IMPORTANT ONLY CHANGE AFTER CALIBRATION
 #define FOC_EMPIRIC_PHASE_ANGLE_OFFSET 7860
 
@@ -157,8 +166,8 @@
 #define DRVSYS_POS_LIMIT_HIGH 125.0*DEG2RAD
 #define DRVSYS_POS_LIMIT_LOW -125.0*DEG2RAD
 
-#define DRVSYS_VEL_MAX 90.0*DEG2RAD // deg/s
-#define DRVSYS_ACC_MAX 100.0*DEG2RAD//deg/s^
+#define DRVSYS_VEL_MAX 400.0*DEG2RAD // deg/s -> rad/s
+#define DRVSYS_ACC_MAX 100.0*DEG2RAD//deg/s^ -> rad/s^2
 
 
 // Origin Location relative to Hall Sensor Locaion 
@@ -176,8 +185,8 @@
 #define DRVSYS_MOTOR_ENC_ALIGN_DIR 1.0
 
 //Kalman Filter Noise Assumptions
-#define DRVSYS_KIN_KALMAN_MOTOR_ACCELERATION_STD 1000.0*DEG2RAD
-#define DRVSYS_KIN_KALMAN_JOINT_ACCELERATION_STD 100.0*DEG2RAD
+#define DRVSYS_KIN_KALMAN_MOTOR_ACCELERATION_STD 50000.0*DEG2RAD
+#define DRVSYS_KIN_KALMAN_JOINT_ACCELERATION_STD 1000.0*DEG2RAD
 
 
 // Notch Filter Settings
@@ -196,15 +205,18 @@
 #define DRVSYS_VEL_PID_FILTER_DERIVATIVE_ALPHA 0.001 // corresponds to ~ 1 Hz aka 2ms Time Constant alpha = (1-exp(-T/tau))
 #define DRVSYS_VEL_PID_DERIVATIVE_ON_MEASUREMENT 0
 #define DRVSYS_VEL_PID_DEADBAND 0.0*DEG2RAD
-#define DRVSYS_VEL_PID_INPUT_FILTER_ALPHA 0.008 // 200Hz/90 ~ 1Hz
+#define DRVSYS_VEL_PID_INPUT_FILTER_ALPHA 0.1 // 200Hz/90 ~ 1Hz
+
+#define DRVSYS_VEL_PID_INPUT_CUTOFF_FREQ 200
+#define DRVSYS_POS_PID_INPUT_CUTOFF_FREQ 30
 
 // PID Gains
-#define PID_POS_GAIN_P 1.00
-#define PID_POS_GAIN_I 0.1
-#define PID_POS_GAIN_D 0.75
+#define PID_POS_GAIN_P 1.0
+#define PID_POS_GAIN_I 0.5
+#define PID_POS_GAIN_D 0.0
 
 #define PID_VEL_GAIN_P 0.5
-#define PID_VEL_GAIN_I 75
+#define PID_VEL_GAIN_I 50
 #define PID_VEL_GAIN_D 0
 
 #define STEPPER_POS_GAIN_P 0.5
@@ -216,13 +228,9 @@
 #define DRVSYS_VEL_FF_GAIN 1*0.15
 #define DRVSYS_ACC_FF_GAIN 1*5.4e-6
 
-#define DRVSYS_NN_CONTROL_AUTO_ACTIVE 0
-
+#define DRVSYS_NN_CONTROL_AUTO_ACTIVE 1
 
 #define DRVSYS_NN_CONTROL_BANDWIDTH 30
-
-
-
 
 // Stepper Settings
 #define DRVSYS_MICROSTEPS 8
@@ -508,3 +516,6 @@
 // Additional Info
 //...
 #endif
+
+
+#endif // !DRIVESYS_SETTINGS_H

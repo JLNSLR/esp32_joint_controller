@@ -4,13 +4,19 @@
 FOCController::FOCController() {
     init_sine_quart();
 }
+
+
 FOCController::FOCController(AS5048A* m_encoder, TMC2160Stepper* driver,
-    int16_t max_current_mA, float max_torque, SemaphoreHandle_t SPI_mutex) :
-    motor_encoder(m_encoder), driver(driver), max_current_mA(max_current_mA),
-    max_torque(max_torque), foc_spi_mutex(SPI_mutex)
+    int16_t max_current_rms_nom_mA, float max_torque_nom, float foc_current_overdrive, SemaphoreHandle_t SPI_mutex):
+    motor_encoder(m_encoder), driver(driver), max_current_rms_nom_mA(max_current_rms_nom_mA),
+    max_torque_nom(max_torque_nom), foc_current_overdrive(foc_current_overdrive), foc_spi_mutex(SPI_mutex)
 {
 
-    this->foc_output_const = (255.0 / 8191.0) * 1.0 / max_torque;
+    motor_torque_const = max_torque_nom / (1.41 * max_current_rms_nom_mA);
+    max_current_rms_foc_mA = max_current_rms_nom_mA * (1.0 + foc_current_overdrive);
+
+    //generate foc_output_const: target-range: -255,...,+255; resolution (14 bit)
+    this->foc_output_const = (255.0 / 8191.0) * (1.0 / (max_torque_nom * (1.0 + foc_current_overdrive)));
 
     this->foc_torque_command_spinlock = portMUX_INITIALIZER_UNLOCKED;
 
@@ -30,8 +36,9 @@ void FOCController::setup_driver() {
     Serial.print("DRVSYS_FOC_INFO: DRV_STATUS=0b");
     Serial.println(driver->DRV_STATUS(), BIN);
 
+
     driver->toff(5);           // Enables driver in software
-    driver->rms_current(max_current_mA); // Set motor RMS current
+    driver->rms_current(max_current_rms_foc_mA); // Set motor RMS current
     driver->microsteps(256);   // Set microsteps to 1/16th
 
     driver->en_pwm_mode(true); // Toggle stealthChop on TMC2130/2160/5130/5160
@@ -43,13 +50,6 @@ void FOCController::setup_driver() {
 
     init_sine_quart();
 
-}
-
-void FOCController::set_max_current(int16_t max_current_mA, float max_torque) {
-    xSemaphoreTake(foc_spi_mutex, portMAX_DELAY);
-    driver->rms_current(max_current_mA); // Set motor RMS current
-    xSemaphoreGive(foc_spi_mutex);
-    this->foc_output_const = (255.0 / 8191.0) * 1.0 / max_torque;
 }
 
 
@@ -103,6 +103,7 @@ void FOCController::calibrate_phase_angle(uint32_t phase_angle_null) {
 
 void FOCController::set_target_torque(float torque_target) {
 
+    float max_torque = max_torque_nom * (1.0 + foc_current_overdrive);
     if (torque_target > max_torque) {
         torque_target = max_torque;
     }
@@ -166,8 +167,9 @@ void FOCController::foc_control() {
     prev_delta_angle = delta_angle;
 
 
-    // anticipate phase shift based on previous shift
-    int32_t empiric_phase_shift = 4* delta_angle;
+    // anticipate phase shift based on previous shift 
+    // empirically compensates latency
+    int32_t empiric_phase_shift = 2.75 * delta_angle;
 
     empiric_phase_shift = empiric_phase_shift;
 
@@ -176,14 +178,14 @@ void FOCController::foc_control() {
     // calculate desired phase currents
 
     int add_phase = 0;
-    
+
     if (target_torque > 0) {
         add_phase = 512;
     }
     else {
         add_phase = -512;
     }
-    
+
 
 
     int16_t i_a_simp = double(-foc_output_const * target_torque * sine_lookup(electric_angle_int + add_phase));
@@ -202,7 +204,7 @@ void FOCController::foc_control() {
 
 }
 
-
+/*
 void FOCController::set_target_torque_9bit(int16_t torque_target) {
     static const float inv_max_torque = 1.0 / max_torque;
     if (torque_target > 255) {
@@ -215,6 +217,7 @@ void FOCController::set_target_torque_9bit(int16_t torque_target) {
     this->target_torque = float(torque_target / 255.0) * inv_max_torque;
     portEXIT_CRITICAL(&foc_torque_command_spinlock);
 }
+*/
 
 void FOCController::init_sine_quart() {
 
