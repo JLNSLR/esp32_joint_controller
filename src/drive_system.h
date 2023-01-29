@@ -160,6 +160,7 @@ drvSys_PID_Gains drvSys_get_PID_gains(bool pos_controller = true);
 void drvSys_set_PID_gains(bool pos, float Kp, float Ki, float Kd, bool save = true);
 void drvSys_set_ff_gains(float vel_ff_gain, float acc_ff_gain);
 void drvSys_save_PID_gains();
+void drvSys_set_foc_calibration(bool reset_foc_cal);
 
 /**
  * @brief adapts advanced PID settings
@@ -169,7 +170,6 @@ void drvSys_save_PID_gains();
  * @param value alpha/deadzone
  */
 void drvSys_adv_PID_settings(bool pos, int type, float value);
-
 
 bool _drvSys_read_PID_gains_from_flash();
 

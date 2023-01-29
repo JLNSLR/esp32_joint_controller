@@ -5,6 +5,7 @@
 #include <TMCStepper.h>
 #include <joint_control_global_def.h>
 #include <AS5048A.h>
+#include <Preferences.h>
 
 #define FOC_SINE_LOOKUP_RES  0.0219726
 #define FOC_SINE_LOOKUP_SIZE 4096
@@ -32,6 +33,8 @@ public:
     void setup_driver();
     void calibrate_phase_angle(uint32_t phase_angle_null = 0); // blocking function should only be called during setup phase
 
+    void calibrate_motor_electric_angle();
+
     void foc_control();
 
     AS5048A* motor_encoder;
@@ -54,6 +57,8 @@ public:
     void set_empiric_phase_shift_factor(float factor);
 
     void _test_sineLookup(float input);
+
+    void set_foc_calibration(bool reset);
 
     long microseconds = 0;
     bool  input_averaging = true;
@@ -85,6 +90,26 @@ private:
     int32_t sineQuart_14bit[FOC_SINE_LOOKUP_SIZE] = { 0 };
 
     double foc_output_const;
+
+    int32_t calibration_lookup[16384] = { 0 };
+    int32_t lookup_offset = 0;
+    int32_t offset_angle = 0;
+
+    int32_t get_calibrated_encoder_val(int32_t enc_val);
+
+
+    Preferences foc_pref;
+    const char* drive_calibration_available = "cali";
+    const char* lookup_offset_key = "loff";
+    const char* offset_key = "offs";
+    const char* lookup_table_key = "lt";
+
+    const char* cali_data_ns = "foc";
+
+    bool read_calibration_data();
+    void save_calibration_data(int32_t lookup_offset, int32_t offset_angle, int32_t* lookup);
+
+
 
 
 

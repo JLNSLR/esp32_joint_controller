@@ -6,7 +6,7 @@
 
 //#define NN_DEBUG
 
-NeuralNetwork::NeuralNetwork(const int depth, int* width, nn_activation_f* f_act_per_layer) :
+NeuralNetwork::NeuralNetwork(const int depth, int* width, nn_activation_f* f_act_per_layer):
     depth(depth), width(width), activation_function_per_layer(f_act_per_layer) {
 
     // add bias neurons to all except the output layer

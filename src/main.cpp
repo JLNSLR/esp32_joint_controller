@@ -61,6 +61,7 @@ void setup()
   xSemaphoreGive(glob_Serial_mutex);
 
   // Start Motion Control Interface
+  
   Serial.println("JCTRL_INFO: Starting Motion Control Interface.");
   drvSys_start_motion_control(closed_loop_foc);
 

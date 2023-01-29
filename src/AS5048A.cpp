@@ -505,7 +505,7 @@ bool AS5048A::error()
 word AS5048A::read(word RegisterAddress, bool MeanValueMedian)
 {
 
-  const int n_median = 5;
+  const int n_median = 3;
   word readdata;
   word array_data[n_median];
   word command = 0b0100000000000000; // PAR=0 R/W=R

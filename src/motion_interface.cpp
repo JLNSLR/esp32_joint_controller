@@ -136,7 +136,7 @@ void _motion_sequencer_task(void* parameters) {
         counter++;
 
         if (test_goto_active) {
-            if (counter % 500 == 0) {
+            if (counter % 100 == 0) {
 
                 static float dir = 1.0;
                 float target = 0;

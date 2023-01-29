@@ -65,7 +65,7 @@ drvSys_controllerCondition drvSys_controller_state = { .control_mode = closed_lo
 .temperature_warning = false,
 .temperature = 20,
      .fan_level = 0,
-    .neural_inverse_dyn_active = false,
+    .neural_inverse_dyn_active = true,
     .neural_pid_active = false };
 
 
@@ -621,6 +621,8 @@ void _drvSys_setup_FOC_Driver() {
     //enter hardcoded Electric Angle Offset
     drvSys_foc_controller.calibrate_phase_angle(FOC_EMPIRIC_PHASE_ANGLE_OFFSET);
 
+    drvSys_foc_controller.calibrate_motor_electric_angle();
+
 };
 
 void drvSys_initialize() {
@@ -637,7 +639,7 @@ void drvSys_initialize() {
 
     /* Set up Drive System Parameters */
     drvSys_parameter_config.max_vel = DRVSYS_VEL_MAX;
-    drvSys_parameter_config.max_torque = DRVSYS_NOMINAL_PHASE_CURRENT_mA * (1 + DRVSYS_CURRENT_OVERDRIVE);
+    drvSys_parameter_config.max_torque = DRVSYS_TORQUE_MAXIMUM;
     drvSys_parameter_config.limit_high_rad = DRVSYS_POS_LIMIT_HIGH;
     drvSys_parameter_config.limit_low_rad = DRVSYS_POS_LIMIT_LOW;
     drvSys_parameter_config.endStops_enabled = DRVSYS_LIMITS_ENABLED;
@@ -771,7 +773,7 @@ void drvSys_initialize() {
     joint_kinematic_kalman_filter.setAccelChange(DRVSYS_KIN_KALMAN_JOINT_ACCELERATION_STD);
     motor_kinematic_kalman_filter.setAccelChange(DRVSYS_KIN_KALMAN_MOTOR_ACCELERATION_STD);
 
-    motor_kinematic_kalman_filter.sensor_noise = 0.05 * DEG2RAD / float(DRVSYS_TRANSMISSION_RATIO);
+    motor_kinematic_kalman_filter.sensor_noise = 0.05 * 0.05 * DEG2RAD / float(DRVSYS_TRANSMISSION_RATIO);
 
     // Setup Encoder task
     xTaskCreatePinnedToCore(
@@ -796,7 +798,7 @@ void drvSys_initialize() {
             DRVSYS_TORQUE_SENSE_CORE // task handle
         );
     }
-
+    /*
     xTaskCreatePinnedToCore(
         _drvSys_monitor_system_task,   // function name
         "monitoring_task", // task name
@@ -806,6 +808,7 @@ void drvSys_initialize() {
         &drvSys_monitor_th,
         DRVSYS_MONITOR_CORE // task handle
     );
+    */
 
 
 
@@ -878,10 +881,8 @@ void _drvSys_neural_controller_setup() {
     neural_controller = new NeuralController();
     neural_controller->init();
 
-    drvSys_controller_state.neural_inverse_dyn_active = false;
-    drvSys_controller_state.neural_pid_active = false;
-
     /* --- create Task --- */
+
     xTaskCreatePinnedToCore(
         _drvSys_learn_neural_control_task,   // function name
         "Learn_Dynamics_Task", // task name
@@ -891,6 +892,7 @@ void _drvSys_neural_controller_setup() {
         &drvSys_neural_controller_th,
         DRVSYS_LEARNING_CORE // task handle
     );
+
 
     Serial.println("DRVSYS_INFO: Finished NN Inverse Dynamics Setup");
 
@@ -970,6 +972,12 @@ float drvSys_pid_nn_error(bool average) {
 
 }
 
+void drvSys_set_foc_calibration(bool reset_foc_cal) {
+
+    drvSys_foc_controller.set_foc_calibration(reset_foc_cal);
+
+}
+
 drvSys_cascade_gains drvSys_get_controller_gains() {
 
     return drvSys_parameter_config.gains;
@@ -1014,17 +1022,13 @@ void _drvSys_learn_neural_control_task(void* parameters) {
 
     const int learn_iterations_pid_tuner = 1;
 
-    drvSys_controller_state.neural_inverse_dyn_active = false;
-    drvSys_controller_state.neural_pid_active = false;
-
-
 
     while (true) {
 
         if (drvSys_controller_state.control_mode == closed_loop_foc && drvSys_controller_state.state_flag == closed_loop_control_active) {
 
             //Check if Neural Control should be active
-            if (learning_counter > minimum_learning_iterations || neural_controller->error_fb_net_pretrained) {
+            if (learning_counter > minimum_learning_iterations) {
                 if (drvSys_neural_control_auto_activation) {
 
                     drvSys_controller_state.neural_inverse_dyn_active = true;
@@ -1036,18 +1040,17 @@ void _drvSys_learn_neural_control_task(void* parameters) {
             drvSys_FullDriveStateTimeSample sample_data = drvSys_get_full_drive_state_time_samples();
             drvSys_driveTargets targets = drvSys_get_targets();
             neural_controller->add_sample(sample_data, targets);
-            neural_controller->learning_step_error_fb_network();
 
             float pos_pid_prev_error = drvSys_position_controller.prev_error;
             float pos_pid_errsum = drvSys_position_controller.iTerm;
             float vel_pid_errsum = drvSys_velocity_controller.iTerm;
-            neural_controller->add_pid_sample(sample_data.state, targets, pos_pid_errsum, pos_pid_prev_error, vel_pid_errsum);
+            neural_controller->add_pid_sample(sample_data.state, targets, pos_pid_errsum, pos_pid_prev_error, vel_pid_errsum, drvSys_pid_torque);
 
             // Perform Training Iterations on Neural Networks
             if (counter % learn_iterations_pid_tuner == 0) {
-                neural_controller->learning_step_pid_tuner();
-                neural_controller->learning_step_error_fb_network();
-                neural_controller->learning_step_emulator();
+                neural_controller->learning_step_inv_dyn_network();
+                //neural_controller->learning_step_pid_tuner();
+                //neural_controller->learning_step_emulator();
                 learning_counter++;
                 taskYIELD();
             }
@@ -1133,12 +1136,10 @@ float drvSys_get_neural_control_error(int nn_type, int error_type) {
 
 void drvSys_neural_control_save_nets(bool reset) {
     if (reset) {
-        neural_controller->reset_error_fb_network();
         neural_controller->reset_emulator_network();
         neural_controller->reset_control_network();
     }
     else {
-        neural_controller->save_error_fb_network();
         neural_controller->save_emulator_network();
         neural_controller->save_control_network();
     }
@@ -1290,7 +1291,7 @@ void _drvSys_setup_dual_controller() {
     drvSys_velocity_controller.setInputFilter(true, vel_pid_alpha);
 
     drvSys_velocity_controller.derivative_on_measurement = DRVSYS_POS_PID_DERIVATIVE_ON_MEASUREMENT;
-    drvSys_velocity_controller.setTuning(drvSys_parameter_config.gains.vel_Kp, drvSys_parameter_config.gains.vel_Ki, 0);;
+    drvSys_velocity_controller.setTuning(drvSys_parameter_config.gains.vel_Kp, drvSys_parameter_config.gains.vel_Ki, 0);
 
 
 
@@ -1608,7 +1609,7 @@ void _drvSys_process_encoders_task(void* parameters) {
 
             // read joint output encoder
             xSemaphoreTake(glob_SPI_mutex, portMAX_DELAY);
-            float raw_joint_angle_rad = drvSys_joint_encoder_dir_align * drvSys_magnetic_joint_encoder.getRotationCentered(false) * encoder2Rad;
+            float raw_joint_angle_rad = drvSys_joint_encoder_dir_align * drvSys_magnetic_joint_encoder.getRotationCentered(true) * encoder2Rad;
             xSemaphoreGive(glob_SPI_mutex);
             // obtain kinematic state via Kalman filter
             KinematicStateVector joint_state = joint_kinematic_kalman_filter.estimateStates(raw_joint_angle_rad);
@@ -1703,6 +1704,7 @@ void _drvSys_PID_dual_controller_task(void* parameters) {
                         drvSys_position_controller.setTuning(updated_gains.pos_Kp, updated_gains.pos_Ki, updated_gains.pos_Kd);
                         drvSys_parameter_config.gains = updated_gains;
 
+
                         vel_ff_gain = updated_gains.vel_ff_gain;
                         acc_ff_gain = updated_gains.acc_ff_gain;
                     }
@@ -1755,11 +1757,10 @@ void _drvSys_PID_dual_controller_task(void* parameters) {
 
                     // read inverse dynamic neural network output
                     if (drvSys_controller_state.neural_inverse_dyn_active) {
-                        if (counter % pos_divider == 0) {
+                        if (counter % 1 /* pos_divider */ == 0) {
                             drvSys_neural_control_pred_torque = _drvSys_neural_control_predict_torque();
-                            torque_ff = torque_ff_alpha * drvSys_neural_control_pred_torque + (1.0 - torque_ff_alpha) * prev_torque_ff;
-                            drvSys_neural_control_pred_torque = torque_ff;
-                            prev_torque_ff = torque_ff;
+                            drvSys_neural_control_pred_torque = torque_ff_alpha * drvSys_neural_control_pred_torque + (1.0 - torque_ff_alpha) * prev_torque_ff;
+                            prev_torque_ff = drvSys_neural_control_pred_torque;
                         }
 
                     }
@@ -1770,7 +1771,7 @@ void _drvSys_PID_dual_controller_task(void* parameters) {
                         acc_ff_gain = 0;
                     }
 
-                    float motor_torque_target = drvSys_pid_torque + torque_ff + drvSys_vel_target * vel_ff_gain + drvSys_acc_target * acc_ff_gain;
+                    float motor_torque_target = drvSys_pid_torque + drvSys_neural_control_pred_torque + drvSys_vel_target * vel_ff_gain + drvSys_acc_target * acc_ff_gain;
 
                     _drvSys_set_target_torque(motor_torque_target);
                     counter++;
@@ -1795,8 +1796,13 @@ void _drvSys_torque_controller_task(void* parameters) {
 
     float motor_torque_command = 0;
 
+    float prev_motor_torque_command = 0;
+
     //const int sample_divider = DRVSYS_CONTROL_POS_PERIOD_US / DRVSYS_CONTROL_TORQUE_PERIOD_US;
 
+    const float torque_control_freq = 1e6 / DRVSYS_CONTROL_TORQUE_PERIOD_US;
+
+    const float alpha_torque_filter = 1 - exp(-float(DRVSYS_TORQUE_CONTROL_BW) / torque_control_freq);
 
     while (true) {
         torque_controller_processing_thread_notification = ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
@@ -1811,10 +1817,16 @@ void _drvSys_torque_controller_task(void* parameters) {
                 motor_torque_command = _drvSys_compute_notch_FIR_filter(motor_torque_command, notch_b_coefs);
             }
 
+            motor_torque_command = alpha_torque_filter * motor_torque_command + (1.0 - alpha_torque_filter) * prev_motor_torque_command;
+
+
+
             xSemaphoreTake(drvSys_mutex_motor_commanded_torque, portMAX_DELAY);
             drvSys_motor_torque_commanded = _drvSys_check_joint_limit(motor_torque_command);
             drvSys_foc_controller.set_target_torque(drvSys_motor_torque_commanded);
             xSemaphoreGive(drvSys_mutex_motor_commanded_torque);
+
+            prev_motor_torque_command = motor_torque_command;
             counter++;
 
         }

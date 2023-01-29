@@ -11,7 +11,7 @@
 #include <drive_system.h>
 
 
-#define BUFFERSIZE 20
+#define BUFFERSIZE 50
 
 //#define NN_CONTROL_DEBUG
 
@@ -77,6 +77,7 @@ struct pid_tune_sample {
     float pos_iTerm;
     float vel_iTerm;
 
+    float pid_torque;
 };
 
 struct full_neural_control_sample {
@@ -95,24 +96,20 @@ public:
     void learning_step_emulator();
     drvSys_driveState emulator_predict_next_state(drvSys_FullDriveState current_state);
     float predict_control_torque(drvSys_FullDriveState current_state, drvSys_driveTargets targets);
-    void learning_step_error_fb_network();
+    void learning_step_inv_dyn_network();
 
     void save_emulator_network();
-    void save_error_fb_network();
     void save_control_network();
     void reset_emulator_network();
-    void reset_error_fb_network();
     void reset_control_network();
 
-    void add_pid_sample(drvSys_FullDriveState current_state, drvSys_driveTargets targets, float pos_err_sum, float pos_prev_err, float vel_err_sum);
+    void add_pid_sample(drvSys_FullDriveState current_state, drvSys_driveTargets targets, float pos_err_sum, float pos_prev_err, float vel_err_sum, float pid_torque);
     void learning_step_pid_tuner();
     drvSys_cascade_gains predict_gains(drvSys_FullDriveState current_state, drvSys_driveTargets targets);
 
 
     NeuralNetwork* emulator_nn;
-    NeuralNetwork* error_feedback_nn;
     NeuralNetwork* controller_nn;
-
     NeuralNetwork* inverse_dynamics_nn;
 
     bool pid_ff_active = true;
@@ -123,15 +120,14 @@ public:
     float average_emulator_error = 1;
     float average_control_error = 1;
     float control_error = 0;
-    bool error_fb_net_pretrained = false;
     bool pid_net_pretrained = false;
     bool emu_net_pretrained = false;
     float control_effort_penalty = 1.0;
 
     float pid_nn_regularization = DRVSYS_PIDNN_LEARNING_REGULARIZATION;
 
-    float pid_nn_max_learning_rate = 8e-3;
-    float pid_nn_min_learning_rate = 0.5e-6;
+    float pid_nn_max_learning_rate = 8e-2;
+    float pid_nn_min_learning_rate = 0.5e-4;
 
     float pid_nn_learning_rate_scale = 10e-3;
 
@@ -145,9 +141,9 @@ public:
 private:
 
     long emulator_counter = 0;
-    static const int emulator_depth = 4;
-    int emulator_width[emulator_depth] = { 8,8,5,3 };
-    nn_activation_f emulator_act[emulator_depth - 1] = { leakyReLu,leakyReLu,Linear };
+    static const int emulator_depth = 3;
+    int emulator_width[emulator_depth] = { 8,10,3 };
+    nn_activation_f emulator_act[emulator_depth - 1] = { leakyReLu,Linear };
 
     CircularBuffer<full_neural_control_sample, BUFFERSIZE > training_buffer_input;
     CircularBuffer<full_neural_control_sample, BUFFERSIZE> training_buffer;
@@ -167,20 +163,14 @@ private:
     char error_fb_nn_name[9] = "ff_nn";
     char controller_nn_name[7] = "c_nn";
 
-
-    static const int error_fb_depth = 3;
-    int error_fb_width[error_fb_depth] = { 8,16,1 };
-    nn_activation_f error_fb_act[error_fb_depth - 1] = { leakyReLu,Linear };
-
-
     static const int controller_nn_depth = 3;
     int controller_nn_width[controller_nn_depth] = { 10,12,5 };
     nn_activation_f controller_nn_act[controller_nn_depth - 1] = { leakyReLu,Linear };
 
 
     static const int inv_nn_depth = 3;
-    int inv_nn_width[inv_nn_depth] = { 10,12,1 };
-    nn_activation_f inv_nn_act[inv_nn_depth - 1] = { leakyReLu,Linear };
+    int inv_nn_width[inv_nn_depth] = { 7,20,1 };
+    nn_activation_f inv_nn_act[inv_nn_depth - 1] = { leakyReLu, Linear };
 
 
     pid_tune_sample current_pid_sample;
@@ -205,6 +195,8 @@ private:
     float vel_input_filter_alpha = DRVSYS_VEL_PID_INPUT_FILTER_ALPHA;
 
     float abs_grad(float x);
+
+    const float pid_p_factor = 1.0;
 
 
 

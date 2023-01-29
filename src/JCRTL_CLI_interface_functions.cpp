@@ -185,15 +185,10 @@ bool jctrl_cli_process_drive_sys_command(char(*cli_arg)[N_MAX_ARGS]) {
             if (mode == 0) {
                 drvSys_start_motion_control(closed_loop_foc);
 
-                _jctrl_cli_feedback_output("Started motion control in dual control mode.");
+                _jctrl_cli_feedback_output("Started motion control in Closed Loop FOC Control");
                 return processed;
             }
             if (mode == 1) {
-                //drvSys_start_motion_control(direct_torque);
-                _jctrl_cli_feedback_output("Started motion control in direct torque mode.");
-                return processed;
-            }
-            if (mode == 2) {
                 drvSys_start_motion_control(stepper_mode);
                 _jctrl_cli_feedback_output("Started motion control in stepper mode.");
                 return processed;
@@ -203,13 +198,27 @@ bool jctrl_cli_process_drive_sys_command(char(*cli_arg)[N_MAX_ARGS]) {
     }
 
     if (strcmp(keyword, "stop") == 0) {
+        processed = true;
         drvSys_stop_controllers();
         _jctrl_cli_feedback_output("Stopped motion controllers.");
         return processed;
     }
 
+    if (strcmp(keyword, "servo") == 0) {
+        processed = true;
+        int32_t mode = atoi(cli_arg[1]);
+        drvSys_set_position_control(mode);
+        drvSys_set_velocity_control(mode);
 
-    
+        if (mode) {
+            _jctrl_cli_feedback_output("Started Servo Cascade Control");
+        }
+        else {
+            _jctrl_cli_feedback_output("Stopped Servo Cascade Control");
+        }
+    }
+
+
 
     return processed;
 
@@ -457,6 +466,18 @@ bool jctrl_cli_manage_calibration_command(char(*cli_arg)[N_MAX_ARGS]) {
 
 
     bool processed = false;
+
+
+    if (strcmp(keyword, "foc") == 0) {
+        processed = true;
+
+        if (strcmp(keyword_0, "del") == 0) {
+            drvSys_set_foc_calibration(true);
+            _jctrl_cli_feedback_output("Deleted FOC Calibration Data on Flash");
+
+        }
+
+    }
 
     if (strcmp(keyword, "cal") == 0) {
         processed = true;
