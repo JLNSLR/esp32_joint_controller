@@ -31,10 +31,7 @@ public:
         float max_torque_nom, float foc_current_overdrive, SemaphoreHandle_t SPI_mutex);
 
     void setup_driver();
-    void calibrate_phase_angle(uint32_t phase_angle_null = 0); // blocking function should only be called during setup phase
-
     void calibrate_motor_electric_angle();
-
     void foc_control();
 
     AS5048A* motor_encoder;

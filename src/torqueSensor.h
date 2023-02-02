@@ -12,6 +12,34 @@
 #define TORQUE_SENSOR_SAMPLE_TIME 3.125e-3
 #define CAPACITIVE_CHANNELS 4
 
+
+// Calibration Data
+#define TORQUE_SENSOR_CAL_1
+//#define TORQUE_SENSOR_CAL_2
+
+
+
+#ifdef TORQUE_SENSOR_CAL_1
+#define INT_TORQUE_OFFSET 641213
+#define TORQUE_CONVERSION_FACTOR 2.172637893301523e-05
+#define EXT_OFFSET 0
+//gain 64
+#endif
+
+#ifdef TORQUE_SENSOR_CAL_2
+#define INT_TORQUE_OFFSET 181301
+#define TORQUE_CONVERSION_FACTOR 2.0038773338398785e-05
+#define EXT_OFFSET 0
+#endif
+
+#ifdef TORQUE_SENSOR_CAL_3
+#define INT_TORQUE_OFFSET 409020
+#define TORQUE_CONVERSION_FACTOR 4.225575456746557e-05
+#define EXT_OFFSET 0
+
+#endif
+
+
 enum torque_sensor_type { dms, cap };
 
 class TorqueSensor {
@@ -37,9 +65,9 @@ public:
     float delta_t = 1.0 / 320;
 
     // Calibration Data
-    float internal_offset = 0;
-    float external_offset = 0;
-    float conversion_factor = 1.0; // integer value to Nm
+    float internal_offset = INT_TORQUE_OFFSET;
+    float external_offset = EXT_OFFSET;
+    float conversion_factor = TORQUE_CONVERSION_FACTOR; // integer value to Nm
 
     // Drift Compensation Parameters
     float drift_noise_val = 1e-8;
@@ -47,13 +75,8 @@ public:
     float initial_drift_val = 0.0;
 
     float damping = 5;
-
     bool calibrated = false;
-
     float raw_sensor_val = 0;
-
-
-
 
 
 private:
@@ -90,7 +113,7 @@ private:
 
     float delta_data_prev = 0;
 
-
+    //Preference variables required to save calibration data on flash
     Preferences torque_preferences;
     //Namespaces for Parameters
     const char* torque_sensor_calibration_ns = "torque";
@@ -101,9 +124,7 @@ private:
     const char* int_offset_key = "int_off";
     const char* ext_offset_key = "ext_off";
 
-
-
-
 };
 
 #endif // !TORQUE_SENSOR_H
+

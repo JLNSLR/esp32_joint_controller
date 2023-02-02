@@ -619,8 +619,6 @@ void _drvSys_setup_FOC_Driver() {
 
     drvSys_foc_controller.setup_driver(); // intialize FOC Driver
     //enter hardcoded Electric Angle Offset
-    drvSys_foc_controller.calibrate_phase_angle(FOC_EMPIRIC_PHASE_ANGLE_OFFSET);
-
     drvSys_foc_controller.calibrate_motor_electric_angle();
 
 };

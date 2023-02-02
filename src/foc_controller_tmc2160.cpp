@@ -230,6 +230,22 @@ void FOCController::calibrate_motor_electric_angle() {
         }
     }
 
+    Serial.println("FOC Calibration Results: ");
+    Serial.print("Offset Angle: ");
+    Serial.println(offset_angle);
+    Serial.print("Lookup Offset: ");
+    Serial.println(lookup_offset);
+
+    Serial.println("Calibration Lookup: ");
+    Serial.print("{");
+    for (int i = 0; i < n_steps; i++) {
+        Serial.print(table[i]);
+        if (i != n_steps - 1) {
+            Serial.print(",");
+        }
+    }
+    Serial.println("}");
+
     save_calibration_data(lookup_offset, offset_angle, table);
     /*
     for (int i = 0; i < n_steps; i++) {
@@ -328,9 +344,7 @@ bool FOCController::read_calibration_data() {
     offset_angle = foc_pref.getInt(offset_key, 0);
 
     const size_t lookup_size = 200;
-
     int32_t table[lookup_size] = { 0 };
-
     const size_t lookup_size_bytes = 4 * lookup_size;
 
     foc_pref.getBytes(lookup_table_key, table, lookup_size_bytes);
@@ -377,72 +391,16 @@ bool FOCController::read_calibration_data() {
 void FOCController::save_calibration_data(int32_t lookup_offset, int32_t offset_angle, int32_t* lookup) {
 
     foc_pref.begin(cali_data_ns, false);
-
     foc_pref.putInt(offset_key, offset_angle);
     foc_pref.putInt(lookup_offset_key, lookup_offset);
 
     const size_t lookup_size_bytes = 200 * 4;
     foc_pref.putBytes(lookup_table_key, lookup, lookup_size_bytes);
-
-
     foc_pref.putBool(drive_calibration_available, true);
 
     foc_pref.end();
 
     Serial.println("FOC: Saved Calibration Data on Flash");
-
-
-
-
-
-}
-
-
-void FOCController::calibrate_phase_angle(uint32_t phase_angle_null) {
-
-    if (phase_angle_null != 0) {
-        phase_null_angle = phase_angle_null;
-    }
-    else {
-        Serial.println("DRVSYS_FOC_INFO: Starting electric angle initial calibration.");
-        xSemaphoreTake(foc_spi_mutex, portMAX_DELAY);
-        SPI.begin();
-        driver->coil_A(0);
-        driver->coil_B(0);
-        xSemaphoreGive(foc_spi_mutex);
-
-        vTaskDelay(500 / portTICK_PERIOD_MS);
-
-        xSemaphoreTake(foc_spi_mutex, portMAX_DELAY);
-        driver->coil_A(255);
-        driver->coil_B(0);
-        xSemaphoreGive(foc_spi_mutex);
-
-        Serial.print("DRVSYS_FOC_INFO: Energize Coils to Position Rotor.");
-
-        vTaskDelay(250 / portTICK_PERIOD_MS);
-
-        uint32_t null_angle_temp = 0.0;
-        int count = 100000;
-
-
-        xSemaphoreTake(foc_spi_mutex, portMAX_DELAY);
-        for (int i = 0; i < count; i++) {
-
-            null_angle_temp = null_angle_temp + motor_encoder->getRotationPos();
-
-        }
-        xSemaphoreGive(foc_spi_mutex);
-
-        null_angle_temp = null_angle_temp / count;
-
-        phase_null_angle = null_angle_temp;
-    }
-
-
-    Serial.print("DRVSYS_FOC_INFO: Found initial electric angle offset ");
-    Serial.println(phase_null_angle);
-    vTaskDelay(1000 / portTICK_PERIOD_MS);
 
 }
 
